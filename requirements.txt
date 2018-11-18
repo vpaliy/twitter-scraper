@@ -1,0 +1,8 @@
+requests>=2.18.4
+six>=1.11.0
+SQLAlchemy>=1.1.14
+urllib3>=1.22
+beautifulsoup4>=4.4.0
+fake-useragent>=0.1.11
+coloredlogs>=9.3.1
+fs=>2.1.2
