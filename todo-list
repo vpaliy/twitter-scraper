@@ -1,0 +1,20 @@
+1. Search by tags
+2. Process the HTML result
+ - get the tweets that have keywords like "RT", "Like", "Follow", "Giveaway"
+ - store those tweet ids
+3. Apply the appropriate action to those tweets
+4. Continue searching for tweets
+
+- Finding tweets
+- Actions (delays should be considered)
+- Blending in into the environment
+
+
+
+- Fetching tweets and passing them to the handler
+- Preparation -- Handling tweets (creating fresh tweets, determining actions)
+- Execution -- firing actions, tweeting random tweets
+
+
+1. One process per user
+2. 

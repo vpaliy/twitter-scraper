@@ -10,6 +10,7 @@ import typing
 import fs
 import re
 import coloredlogs
+import abc
 
 from actions import FollowAction, RetweetAction, LikeAction, Action
 from six.moves.http_cookiejar import FileCookieJar, LWPCookieJar
@@ -75,30 +76,34 @@ class Tweet(object):
     self.retweet_count = retweet_count
 
 
-class TweetHandler(object):
-  def __init__(self, queue, action_queue, keywords,
-               avoid_keywords=None, avoid_usernames=None):
+class TweetHandler(abc.ABC):
+  _AVOID_KEYWORDS = {'bot', 'fake'}
+  _AVOID_USERNAMES = {'bot', 'bot spotter'}
+
+  def __init__(self, queue, action_queue, **kwargs):
     if not queue or not action_queue:
       raise RuntimeError('Queues should be provided')
     self._queue = queue
     self._action_queue = action_queue
-    self._keywords = keywords
-    self._avoid_keywords = avoid_keywords or {'bot', 'fake'}
-    self._avoid_usernames = avoid_usernames or {'bot', 'bot spotter'}
-    self._follow_re = re.compile('follow', re.IGNORECASE)
-    self._like_re = re.compile('|'.join(['like', 'fav']), re.IGNORECASE)
-    self._rt_re = re.compile('|'.join(['rt', 'retweet']), re.IGNORECASE)
+    self._keywords = kwargs['keywords']
+    self._avoid_keywords = kwargs.get('avoid-keywords', self._AVOID_KEYWORDS)
+    self._avoid_usernames = kwargs.get('avoid-usernames', self._AVOID_USERNAMES)
 
   def handle(self):
     pattern = re.compile(
-      r'(?i)(?=.*({find}))^((?!\b({avoid})\b[^a-z\s]*).)*$'.format(
+      r'^((.*? )?({find})([ ,.!?]|$)){{2}}.*$'.format(
       find='|'.join(self._keywords),
-      avoid='|'.join(self._avoid_keywords))
-    )
+    ), re.IGNORECASE)
 
-    avoid = re.compile(
-      r'(?i)\b({0})\b[^a-z\s]*'.format('|'.join(self._avoid_usernames))
-    )
+    avoid_keywords = re.compile(
+      r'(?i)\b({avoid})\b[^a-z\s]*'.format(
+      avoid='|'.join(self._avoid_keywords)
+    ))
+
+    avoid_usernames = re.compile(
+      r'(?i)\b({avoid})\b[^a-z\s]*'.format(
+      avoid='|'.join(self._avoid_usernames)
+    ))
 
     while True:
       tweet = self._queue.get()
@@ -106,13 +111,27 @@ class TweetHandler(object):
         self._queue.put(_sentinel)
         break
       user = tweet.user
-      if avoid.search(user.username):
+      if avoid_usernames.search(user.username):
         logger.warning(f'tweet from forbidden {user.username}, skipping')
         continue
+      if avoid_keywords.search(tweet.text):
+        continue
       if pattern.search(tweet.text):
-        self._process_tweet(tweet)
+        self.process_tweet(tweet)
 
-  def _process_tweet(self, tweet):
+  @abstractmethod
+  def process_tweet(self, tweet):
+    raise NotImplemented
+
+
+class ContestTweetHandler(TweetHandler):
+  def __init__(self, *args, **kwargs):
+    super().__init__(*args, **kwargs)
+    self._follow_re = re.compile('follow', re.IGNORECASE)
+    self._like_re = re.compile('|'.join(['like', 'fav']), re.IGNORECASE)
+    self._rt_re = re.compile('|'.join(['rt', 'retweet']), re.IGNORECASE)
+
+  def process_tweet(self, tweet):
     text, user = tweet.text, tweet.user
     actions = []
     if self._rt_re.search(text):
@@ -286,6 +305,7 @@ def _create_tweet(id, user, raw_tweet):
       if 'twitter-atreply' in cls:
         user_id = child.get('data-mentioned-user-id')
         links.add(AtLink(user_id, href))
+        text += child.text
   return Tweet(id, user, text, links, count)
 
 
@@ -312,22 +332,31 @@ class TweetSearcher(object):
   def __init__(self, queue, **kwargs):
     if not queue:
       raise ValueError('Queue should be provided')
-    self._endtime = kwargs.get('endtime', time.time() + 60 * 25)
-    self._req_delay = kwargs.get('req_delay', 5)
-    self._error_delay = kwargs.get('error_delay', 5)
-    self._empty_delay = kwargs.get('empty_delay', 15)
-    self._error_tries = kwargs.get('error_tries', 5)
-    self._empty_tries = kwargs.get('empty_tries', 5)
-    self._tweets_limit = kwargs.get('tweets_limit')
-    self._with_pics_only = kwargs.get('pics_only', True)
+    if 'scan-time' in kwargs:
+      kwargs['scan-time'] = time.time() + kwargs['scan-time']
+    self._endtime = kwargs.get('scan-time', time.time() + 60 * 25)
+    self._req_delay = kwargs.get('request-delay', 5)
+    self._error_delay = kwargs.get('error-request-delay', 5)
+    self._empty_delay = kwargs.get('empty-request-delay', 15)
+    self._error_tries = kwargs.get('error-tries', 5)
+    self._empty_tries = kwargs.get('empty-tries', 5)
+    self._tweets_limit = kwargs.get('tweets-limit')
+    self._with_pics_only = kwargs.get('pictures-only', True)
+    self._verified_only = kwargs.get('verified-accounts-only')
     self._queue = queue
     self._cache = set()
 
   def _make_request(self, query, limit=None):
     params = {
-      'f': 'tweets',
+      'vertical': 'default',
+      'src': 'typd',
+      'include_available_features': '1',
+      'include_entities': '1',
       'q': query
     }
+
+    if bool(random.getrandbits(1)):
+      params['f'] = 'tweets' # this will fetch the latest
 
     if limit is not None:
       params['max_position'] = limit
@@ -377,6 +406,8 @@ class TweetSearcher(object):
         raw = tweet.find(class_='js-stream-tweet')
         # filter retweeted
         if id in self._cache or is_retweeted(raw):
+          username = raw.get('data-screen-name')
+          logger.warning(f'already retweeted {id} by {username}')
           continue
         elif len(self._cache) == 500:
           self._cache.clear()
@@ -397,7 +428,7 @@ class TweetSearcher(object):
 
         if self._tweets_limit is not None:
           if self._tweets_limit <= tweet_count:
-            self._finish(tweet_count)
+            self._finish(query, tweet_count)
             return
 
       max = tweets[-1].get('data-item-id')
@@ -406,8 +437,8 @@ class TweetSearcher(object):
       if max is not min:
         limit = f'TWEET-{max}-{min}'
       time.sleep(self._req_delay)
-    self._finish(tweet_count)
+    self._finish(query, tweet_count)
 
-  def _finish(self, tweet_count):
-    logger.info(f'Total tweets found:{tweet_count}')
+  def _finish(self, query, tweet_count):
+    logger.info(f'{query} | Total tweets found:{tweet_count}')
     self._queue.put(_sentinel)
