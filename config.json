@@ -2,10 +2,11 @@
     "searchers": [{
         "count": 1,
         "search-queries": ["#giveaway", "Retweet and win", "retweet and you could win", "rt for your chance to win", "#giveawayalert", "win rt", "#rttowin", "#sweepstakes"],
-        "scan-time": 83,
-        "tweet-limit": 83,
+        "scan-time": 560,
+        "month-diff": 1,
+        "tweet-limit": null,
         "request-delay": 5,
-        "error-delay": 83,
+        "error-delay": 5,
         "empty-request-delay": 20,
         "error-tries": 5,
         "empty-tries": 5,
@@ -15,8 +16,7 @@
 
     "handlers": [{
         "count": 2,
-        "keywords": ["winner", "win"],
-        "avoid-keywords": ["bot", "fake", "RT @.\\S"],
+        "keywords": ["winner", "win", "giveaway", "free", "lucky", "rt2win"],
         "avoid-usernames": ["bot", "bot spotter"]
     }]
 }

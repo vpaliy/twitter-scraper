@@ -1,5 +1,6 @@
 import os
 import time
+import datetime
 import logging
 import json
 import random
@@ -11,6 +12,7 @@ import fs
 import re
 import coloredlogs
 import abc
+import dateutil.relativedelta
 
 from actions import FollowAction, RetweetAction, LikeAction, Action
 from six.moves.http_cookiejar import FileCookieJar, LWPCookieJar
@@ -77,7 +79,7 @@ class Tweet(object):
 
 
 class TweetHandler(abc.ABC):
-  _AVOID_KEYWORDS = {'bot', 'fake'}
+  _AVOID_KEYWORDS = {'bot', 'fake', 'RT @./S'}
   _AVOID_USERNAMES = {'bot', 'bot spotter'}
 
   def __init__(self, queue, action_queue, **kwargs):
@@ -91,7 +93,7 @@ class TweetHandler(abc.ABC):
 
   def handle(self):
     pattern = re.compile(
-      r'^((.*? )?({find})([ ,.!?]|$)){{2}}.*$'.format(
+      r'^((.*? )?({find})([ ,.!?]|$)){{3}}.*$'.format(
       find='|'.join(self._keywords),
     ), re.IGNORECASE)
 
@@ -334,6 +336,9 @@ class TweetSearcher(object):
       raise ValueError('Queue should be provided')
     if 'scan-time' in kwargs:
       kwargs['scan-time'] = time.time() + kwargs['scan-time']
+    if 'month-diff' in kwargs:
+      delta = dateutil.relativedelta.relativedelta(months=kwargs['month-diff'])
+      kwargs['month-diff'] = datetime.datetime.now() - delta
     self._endtime = kwargs.get('scan-time', time.time() + 60 * 25)
     self._req_delay = kwargs.get('request-delay', 5)
     self._error_delay = kwargs.get('error-request-delay', 5)
@@ -343,6 +348,7 @@ class TweetSearcher(object):
     self._tweets_limit = kwargs.get('tweets-limit')
     self._with_pics_only = kwargs.get('pictures-only', True)
     self._verified_only = kwargs.get('verified-accounts-only')
+    self._month_diff = kwargs.get('month-diff')
     self._queue = queue
     self._cache = set()
 
@@ -384,6 +390,13 @@ class TweetSearcher(object):
     logger.error(f'failed to make the search request: {query}')
     exit()
 
+  def _is_date_valid(self, raw_tweet):
+    if self._month_diff is not None:
+      date = raw_tweet.find(class_='tweet-timestamp')
+      date = datetime.datetime.strptime(date.get('title'), '%I:%M %p - %d %b %Y')
+      return self._month_diff <= date
+    return True
+
   def search(self, query):
     if not query:
       raise TypeError('search takes a query param')
@@ -404,10 +417,13 @@ class TweetSearcher(object):
       for tweet in tweets:
         id = tweet.get('data-item-id')
         raw = tweet.find(class_='js-stream-tweet')
+        # skip if too old
+        if not self._is_date_valid(raw):
+          continue
         # filter retweeted
         if id in self._cache or is_retweeted(raw):
           username = raw.get('data-screen-name')
-          logger.warning(f'already retweeted {id} by {username}')
+          logger.warning(f'already retweeted {id} by @{username}')
           continue
         elif len(self._cache) == 500:
           self._cache.clear()
