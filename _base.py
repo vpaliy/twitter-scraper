@@ -93,7 +93,7 @@ class TweetHandler(abc.ABC):
 
   def handle(self):
     pattern = re.compile(
-      r'^((.*? )?({find})([ ,.!?]|$)){{3}}.*$'.format(
+      r'^((.*? )?({find})([ ,.!?]|$)){{1}}.*$'.format(
       find='|'.join(self._keywords),
     ), re.IGNORECASE)
 
@@ -450,7 +450,9 @@ class TweetSearcher(object):
       max = tweets[-1].get('data-item-id')
       min = tweets[0].get('data-item-id')
 
-      if max is not min:
+      if 'min_position' in data.keys():
+        limit = data['min_position']
+      elif max is not min:
         limit = f'TWEET-{max}-{min}'
       time.sleep(self._req_delay)
     self._finish(query, tweet_count)

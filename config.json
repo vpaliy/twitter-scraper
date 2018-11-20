@@ -1,7 +1,7 @@
 {
     "searchers": [{
         "count": 1,
-        "search-queries": ["#giveaway", "Retweet and win", "retweet and you could win", "rt for your chance to win", "#giveawayalert", "win rt", "#rttowin", "#sweepstakes"],
+        "search-queries": ["rt to win"],
         "scan-time": 560,
         "month-diff": 1,
         "tweet-limit": null,
