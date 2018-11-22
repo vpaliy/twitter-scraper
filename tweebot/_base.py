@@ -15,21 +15,14 @@ import abc
 import dateutil.relativedelta
 import constants
 
+from tweebot import __version__, logger
 from actions import FollowAction, RetweetAction, LikeAction, Action
 from six.moves.http_cookiejar import FileCookieJar, LWPCookieJar
 from abc import abstractmethod, ABC
 from bs4 import BeautifulSoup
 from bs4.element import NavigableString, Tag
 
-__version__ = "0.0.1"
-
-logging.basicConfig(level=logging.INFO)
-logger = logging.getLogger(__name__)
-coloredlogs.install(level='INFO', logger=logger)
-coloredlogs.install(fmt='%(asctime)s | %(message)s')
-
 _sentinel = object()
-
 
 class TimeoutSession(requests.Session):
   def request(self, *args, **kwargs):

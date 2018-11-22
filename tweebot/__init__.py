@@ -7,8 +7,9 @@ import logging
 import coloredlogs
 
 __author__ = "Vasyl Paliy"
-__version__ = "0.0.1"
+__version__ = '0.1'
 __license___ = "MIT"
+
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
