@@ -4,6 +4,7 @@ import requests
 import time
 import fake_useragent
 import _thread
+import constants
 
 from abc import ABC, abstractmethod
 
@@ -24,10 +25,10 @@ class Action(ABC):
       _thread.interrupt_main()
 
     session.headers['User-Agent'] = 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) snap Chromium/70.0.3538.77 Chrome/70.0.3538.77 Safari/537.36'
-    session.headers['Authorization'] = _base.BEARER
+    session.headers['Authorization'] = constants.BEARER
     session.headers['X-Twitter-Auth-Type'] = 'OAuth2Session'
     session.headers['X-Twitter-Active-User'] = 'yes'
-    session.headers['Origin'] = 'https://twitter.com'
+    session.headers['Origin'] = constants.BASE_URL
     session.headers['x-csrf-token'] = cookies['ct0']
 
     return session
@@ -61,7 +62,7 @@ class Action(ABC):
 class FollowAction(Action):
   def execute(self, delay):
     user = self.tweet.user
-    res = self.make_request(_base.FOLLOW_URL, error_delay=delay)
+    res = self.make_request(constants.FOLLOW_URL, error_delay=delay)
     if res.status_code != 200:
       _base.logger.error(f'failed to follow {user.username}')
     else:
@@ -86,7 +87,7 @@ class RetweetAction(Action):
   def execute(self, delay):
     time.sleep(delay)
 
-    res = self.make_request(url=_base.RETWEET_URL, error_delay=delay)
+    res = self.make_request(url=constants.RETWEET_URL, error_delay=delay)
 
     if res.status_code != 200:
       _base.logger.error(f'failed to retweet: {self.tweet.id}')
@@ -101,20 +102,11 @@ class RetweetAction(Action):
     }
 
 
-class MessageAction(Action):
-  def __init__(self, id, message):
-    self._id = id
-    self._message = message
-
-  def execute(self, delay):
-    pass
-
-
 class LikeAction(Action):
   def execute(self, delay):
     time.sleep(delay)
 
-    res = self.make_request(url=_base.LIKE_URL, error_delay=delay)
+    res = self.make_request(url=constants.LIKE_URL, error_delay=delay)
 
     if res.status_code != 200:
       _base.logger.error(f'failed to like: {self.tweet.id}')

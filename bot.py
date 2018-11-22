@@ -67,9 +67,10 @@ parser.add_argument(
   default='user-agents.txt'
 )
 parser.add_argument(
-  '-i', '--invalidate-cache',
+  '-i', '--invalidate',
   help='Invalidate all saved sessions',
-  dest='invalidate'
+  dest='invalidate',
+  action='store_true'
 )
 parser.add_argument(
   '-c', '--config',
@@ -110,6 +111,8 @@ if args.invalidate:
         os.unlink(file_path)
     except Exception as e:
       pass
+    else:
+      _base.logger.info('All stored data has been cleared')
 
 try:
   with open(args.agents_file, encoding='UTF-8') as fp:

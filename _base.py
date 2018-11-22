@@ -13,6 +13,7 @@ import re
 import coloredlogs
 import abc
 import dateutil.relativedelta
+import constants
 
 from actions import FollowAction, RetweetAction, LikeAction, Action
 from six.moves.http_cookiejar import FileCookieJar, LWPCookieJar
@@ -26,18 +27,6 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 coloredlogs.install(level='INFO', logger=logger)
 coloredlogs.install(fmt='%(asctime)s | %(message)s')
-
-BASE_URL = 'https://twitter.com'
-TIMELINE_SEARCH_URL = 'https://twitter.com/i/search/timeline'
-SEARCH_URL = 'https://twitter.com/search/'
-LOGIN_URL = 'https://twitter.com/login'
-SESSIONS_URL = 'https://twitter.com/sessions'
-RETWEET_URL = 'https://api.twitter.com/1.1/statuses/retweet.json'
-FOLLOW_URL = 'https://api.twitter.com/1.1/friendships/create.json'
-LIKE_URL = 'https://api.twitter.com/1.1/favorites/create.json'
-
-COOKIES_FILE = 'cookies.txt'
-BEARER = 'Bearer AAAAAAAAAAAAAAAAAAAAAPYXBAAAAAAACLXUNDekMxqa8h%2F40K4moUkGsoc%3DTYfbDKbT3jJPCEVnMYqilB28NHfOPqkca3qaAxGfsyKCs0wRbw'
 
 _sentinel = object()
 
@@ -64,7 +53,7 @@ class AtLink(object):
   def __init__(self, user_id, username):
     self.user_id = user_id
     self.username = username
-    self.link = BASE_URL + username
+    self.link = constants.BASE_URL + username
 
 
 class Tweet(object):
@@ -79,8 +68,8 @@ class Tweet(object):
 
 
 class TweetHandler(abc.ABC):
-  _AVOID_KEYWORDS = {'bot', 'fake', 'RT @./S'}
-  _AVOID_USERNAMES = {'bot', 'bot spotter'}
+  _AVOID_KEYWORDS = {'bot', 'fake'}
+  _AVOID_USERNAMES = {'bot', 'bot spotter', 'bot spotting'}
 
   def __init__(self, queue, action_queue, **kwargs):
     if not queue or not action_queue:
@@ -129,14 +118,14 @@ class TweetHandler(abc.ABC):
 class ContestTweetHandler(TweetHandler):
   def __init__(self, *args, **kwargs):
     super().__init__(*args, **kwargs)
-    self._follow_re = re.compile('follow', re.IGNORECASE)
-    self._like_re = re.compile('|'.join(['like', 'fav']), re.IGNORECASE)
-    self._rt_re = re.compile('|'.join(['rt', 'retweet']), re.IGNORECASE)
+    self._follow = re.compile('follow', re.IGNORECASE)
+    self._like = re.compile('|'.join(['like', 'fav']), re.IGNORECASE)
+    self._retweet = re.compile('|'.join(['rt', 'retweet']), re.IGNORECASE)
 
   def process_tweet(self, tweet):
     text, user = tweet.text, tweet.user
     actions = []
-    if self._rt_re.search(text):
+    if self._retweet.search(text):
       actions.append(LikeAction(tweet))
       actions.append(RetweetAction(tweet))
       if not user.is_followed:
@@ -144,13 +133,13 @@ class ContestTweetHandler(TweetHandler):
       else:
         logger.warning(f'already following {user.username}')
     else:
-      if self._follow_re.search(text):
+      if self._follow.search(text):
         if not user.is_followed:
           actions.append(FollowAction(tweet))
           actions.append(LikeAction(tweet))
         else:
           logger.warning(f'already following {user.username}')
-          if self._like_re.search(text):
+          if self._like.search(text):
             actions.append(LikeAction(tweet))
     if len(actions) > 0:
       self._action_queue.put(actions)
@@ -188,7 +177,7 @@ def _get_cache_fs():
 def create_session(username):
   session = TimeoutSession()
   session.cookies = LWPCookieJar(
-    _get_cache_fs().getsyspath(f'{username}-{COOKIES_FILE}')
+    _get_cache_fs().getsyspath(f'{username}-{constants.COOKIES_FILE}')
   )
   try:
     typing.cast(FileCookieJar, session.cookies).load()
@@ -206,11 +195,13 @@ def _is_logged(username):
         expired = True
         break
       if cookie.name == 'auth_token':
-        logger.info(f'You are signed in as {username}')
+        logger.info(f'You have signed in as {username}')
         return True
   if expired:
     # remove cookies for that user
-    file = _get_cache_fs().getsyspath(f'{username}-{COOKIES_FILE}')
+    file = _get_cache_fs().getsyspath(
+      f'{username}-{constants.COOKIES_FILE}'
+    )
     os.remove(file)
     logger.warning(f'{username} session has expired. Please sign in.')
   else:
@@ -220,7 +211,7 @@ def _is_logged(username):
 
 def login(username, password, tries=10, delay=2):
   with create_session(username) as session:
-    res = session.get(LOGIN_URL)
+    res = session.get(constants.LOGIN_URL)
     soup = BeautifulSoup(res.text,"html.parser")
     token = soup.select_one("[name='authenticity_token']")['value']
 
@@ -228,13 +219,13 @@ def login(username, password, tries=10, delay=2):
       'session[username_or_email]':username,
       'session[password]': password,
       'authenticity_token':token,
-      'ui_metrics':'{"rf":{"c6fc1daac14ef08ff96ef7aa26f8642a197bfaad9c65746a6592d55075ef01af":3,"a77e6e7ab2880be27e81075edd6cac9c0b749cc266e1cea17ffc9670a9698252":-1,"ad3dbab6c68043a1127defab5b7d37e45d17f56a6997186b3a08a27544b606e8":252,"ac2624a3b325d64286579b4a61dd242539a755a5a7fa508c44eb1c373257d569":-125},"s":"fTQyo6c8mP7d6L8Og_iS8ulzPObBOzl3Jxa2jRwmtbOBJSk4v8ClmBbF9njbZHRLZx0mTAUPsImZ4OnbZV95f-2gD6-03SZZ8buYdTDkwV-xItDu5lBVCQ_EAiv3F5EuTpVl7F52FTIykWowpNIzowvh_bhCM0_6ReTGj6990294mIKUFM_mPHCyZ    xkIUAtC3dVeYPXff92alrVFdrncrO8VnJHOlm9gnSwTLcbHvvpvC0rvtwapSbTja-cGxhxBdekFhcoFo8edCBiMB9pip-VoquZ-ddbQEbpuzE7xBhyk759yQyN4NmRFwdIjjedWYtFyOiy_XtGLp6zKvMjF8QAAAWE468LY"}',
+      'ui_metrics': constants.UI_METRICS,
       'authenticity_token':token,
       'remember_me':1
     }
 
-    session.headers['Origin'] = BASE_URL
-    session.headers['Referer'] = LOGIN_URL
+    session.headers['Origin'] = constants.BASE_URL
+    session.headers['Referer'] = constants.LOGIN_URL
     session.headers['Upgrade-Insecure-Requests'] = '1'
 
     time.sleep(5) # pause a bit
@@ -243,7 +234,7 @@ def login(username, password, tries=10, delay=2):
       try:
         # random user-agent
         session.headers['User-Agent'] = fake_useragent.UserAgent().firefox
-        res = session.post(SESSIONS_URL, data=payload, allow_redirects=False)
+        res = session.post(constants.SESSIONS_URL, data=payload, allow_redirects=False)
         res.raise_for_status()
         if 'location' in res.headers:
           url = res.headers['location']
@@ -372,13 +363,13 @@ class TweetSearcher(object):
       # set headers
       session.headers['Accept'] = 'application/json, text/javascript, */*; q=0.01'
       session.headers['Accept-Language'] = 'en-US,en;q=0.5'
-      session.headers['Referer'] = SEARCH_URL
+      session.headers['Referer'] = constants.SEARCH_URL
       session.headers['X-Requested-With'] = 'XMLHttpRequest'
       session.headers['X-Twitter-Active-User'] = 'yes'
       while tries > 0:
         try:
           session.headers['User-Agent'] = 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) snap Chromium/70.0.3538.77 Chrome/70.0.3538.77 Safari/537.36'
-          res = session.get(TIMELINE_SEARCH_URL, params=params)
+          res = session.get(constants.TIMELINE_SEARCH_URL, params=params)
           data = res.json()
           # check if we have what we need
           data['inner']['items_html']
@@ -421,7 +412,7 @@ class TweetSearcher(object):
         if not self._is_date_valid(raw):
           continue
         # filter retweeted
-        if id in self._cache or is_retweeted(raw):
+        if is_retweeted(raw):
           username = raw.get('data-screen-name')
           logger.warning(f'already retweeted {id} by @{username}')
           continue

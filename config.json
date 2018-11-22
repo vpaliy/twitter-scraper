@@ -1,7 +1,7 @@
 {
     "searchers": [{
         "count": 1,
-        "search-queries": ["rt to win"],
+        "search-queries": [],
         "scan-time": 560,
         "month-diff": 1,
         "tweet-limit": null,
@@ -15,8 +15,8 @@
     }],
 
     "handlers": [{
-        "count": 2,
-        "keywords": ["winner", "win", "giveaway", "free", "lucky", "rt2win"],
-        "avoid-usernames": ["bot", "bot spotter"]
+        "count": 5,
+        "keywords": [],
+        "avoid-usernames": ["bot", "bot spotter", "bot spotting"]
     }]
 }
