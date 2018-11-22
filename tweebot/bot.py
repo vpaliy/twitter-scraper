@@ -9,7 +9,7 @@ import _base
 import queue
 import threading
 import collections
-
+from tweebot import logger
 
 def _get_searchers(queue, config):
   count = config.get('count', 1)
@@ -64,7 +64,7 @@ parser.add_argument(
   '-a', '--agents',
   help='File containing user-agents',
   dest='agents_file',
-  default='user-agents.txt'
+  default='config/user-agents.txt'
 )
 parser.add_argument(
   '-i', '--invalidate',
@@ -76,7 +76,7 @@ parser.add_argument(
   '-c', '--config',
   help='Configuration file',
   dest='config',
-  default='config.json'
+  default='config/config.json'
 )
 parser.add_argument(
   '-e', '--executor-count',
@@ -88,7 +88,7 @@ parser.add_argument(
 args = parser.parse_args()
 
 if not args.config:
-  _base.logger.error('You need to provide the path to the config.json file')
+  logger.error('You need to provide the path to the config.json file')
   exit()
 
 config = {}
@@ -112,7 +112,7 @@ if args.invalidate:
     except Exception as e:
       pass
     else:
-      _base.logger.info('All stored data has been cleared')
+      logger.info('All stored data has been cleared')
 
 try:
   with open(args.agents_file, encoding='UTF-8') as fp:
@@ -128,7 +128,7 @@ while True:
     try:
       _base.login(username, password)
     except _base.InvalidCredentials:
-      _base.logger.error('Invalid credentials.Try again')
+      logger.error('Invalid credentials.Try again')
       continue
   os.environ['username'] = username
   break

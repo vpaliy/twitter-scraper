@@ -5,7 +5,7 @@ import time
 import fake_useragent
 import _thread
 import constants
-
+from tweebot import logger
 from abc import ABC, abstractmethod
 
 
@@ -21,7 +21,7 @@ class Action(ABC):
     cookies = requests.utils.dict_from_cookiejar(session.cookies)
 
     if 'ct0' not in cookies:
-      _base.logger.error(f'{username} session has expired. Log in again')
+      logger.error(f'{username} session has expired. Log in again')
       _thread.interrupt_main()
 
     session.headers['User-Agent'] = 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) snap Chromium/70.0.3538.77 Chrome/70.0.3538.77 Safari/537.36'
@@ -64,9 +64,9 @@ class FollowAction(Action):
     user = self.tweet.user
     res = self.make_request(constants.FOLLOW_URL, error_delay=delay)
     if res.status_code != 200:
-      _base.logger.error(f'failed to follow {user.username}')
+      logger.error(f'failed to follow {user.username}')
     else:
-      _base.logger.info(f'followed: {user.username}')
+      logger.info(f'followed: {user.username}')
 
   @property
   def payload(self):
@@ -90,9 +90,9 @@ class RetweetAction(Action):
     res = self.make_request(url=constants.RETWEET_URL, error_delay=delay)
 
     if res.status_code != 200:
-      _base.logger.error(f'failed to retweet: {self.tweet.id}')
+      logger.error(f'failed to retweet: {self.tweet.id}')
     else:
-      _base.logger.info(f'retweeted: {self.tweet.id}')
+      logger.info(f'retweeted: {self.tweet.id}')
 
   @property
   def payload(self):
@@ -109,9 +109,9 @@ class LikeAction(Action):
     res = self.make_request(url=constants.LIKE_URL, error_delay=delay)
 
     if res.status_code != 200:
-      _base.logger.error(f'failed to like: {self.tweet.id}')
+      logger.error(f'failed to like: {self.tweet.id}')
     else:
-      _base.logger.info(f'liked: {self.tweet.id}')
+      logger.info(f'liked: {self.tweet.id}')
 
   @property
   def payload(self):

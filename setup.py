@@ -9,6 +9,18 @@ with open(os.path.join(base_path, 'tweebot', '__init__.py')) as fp:
 
 version = VERSION
 
+requires = [
+  'requests>=2.18.4',
+  'six>=1.11.0',
+  'SQLAlchemy>=1.1.14',
+  'urllib3>=1.22',
+  'beautifulsoup4>=4.4.0'
+]
+
+packages = [
+  'tweebot'
+]
+
 setup(
     name='tweebot',
     version=version,
@@ -17,7 +29,10 @@ setup(
     author_email='vpaliy97@gmail.com',
     url='https://github.com/thevpaliy/twitter-santa',
     license='MIT',
-    packages=find_packages(),
+    python_requires=">=3.0",
+    packages=packages,
+    install_requires=requires,
+    use_2to3=True,
     include_package_data=True,
     classifiers=[
         'Intended Audience :: Developers',

@@ -1,7 +1,7 @@
 {
     "searchers": [{
         "count": 1,
-        "search-queries": [],
+        "search-queries": ["rt to win", "#giveaway"],
         "scan-time": 560,
         "month-diff": 1,
         "tweet-limit": null,
@@ -9,14 +9,12 @@
         "error-delay": 5,
         "empty-request-delay": 20,
         "error-tries": 5,
-        "empty-tries": 5,
-        "with-pics-only": true,
-        "verified-only": true
+        "empty-tries": 5
     }],
 
     "handlers": [{
         "count": 5,
-        "keywords": [],
+        "keywords": ["win", "winner", "lucky"],
         "avoid-usernames": ["bot", "bot spotter", "bot spotting"]
     }]
 }
