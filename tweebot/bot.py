@@ -11,60 +11,16 @@ import threading
 import collections
 from tweebot import logger
 
-def _get_searchers(queue, config):
-  count = config.get('count', 1)
-  result = {'query': config['search-queries']}
-  while count > 0:
-    searcher = _base.TweetSearcher(queue, **config)
-    result.setdefault('searchers', []).append(searcher)
-    count -= 1
-  return result
-
-
-def _get_handlers(tweet_queue, action_queue, config):
-  count = config.get('count', 1)
-  handlers = []
-  while count > 0:
-    handlers.append(_base.ContestTweetHandler(
-      tweet_queue, action_queue, **config
-    ))
-    count -= 1
-  return handlers
-
-
-def _spin_handlers(handlers):
-  for handler in handlers:
-    threading.Thread(
-      target=handler.handle
-    ).start()
-
-
-def _spin_searchers(queries, searchers):
-  if not isinstance(queries, collections.Iterable):
-    queries = (queries, )
-  for query in queries:
-    for searcher in searchers:
-      threading.Thread(
-        target=searcher.search, args=(query,)
-      ).start()
-
-
-def _spin_executors(executors):
-  if not isinstance(executors, collections.Iterable):
-    executors = (executors, )
-  for executor in executors:
-    threading.Thread(
-      target=executor.execute
-    ).start()
-
-
 parser = argparse.ArgumentParser()
+default_config_path = os.path.join(
+  os.path.dirname(__file__), 'config/'
+)
 
 parser.add_argument(
   '-a', '--agents',
   help='File containing user-agents',
   dest='agents_file',
-  default='config/user-agents.txt'
+  default=f'{default_config_path}/user-agents.txt'
 )
 parser.add_argument(
   '-i', '--invalidate',
@@ -76,7 +32,7 @@ parser.add_argument(
   '-c', '--config',
   help='Configuration file',
   dest='config',
-  default='config/config.json'
+  default=f'{default_config_path}/config.json'
 )
 parser.add_argument(
   '-e', '--executor-count',
@@ -100,6 +56,18 @@ try:
     config['searchers']; config['handlers'] # quick check
 except Exception as ex:
   exit(f'Failed to read config.json .\n {ex}')
+
+if not 'executors' in config:
+  if not args.executor_count:
+    logger.error(
+      '''You will need to provide configurations
+      for the executor object. Check the docs for more info.'''
+    )
+    exit()
+  config['executors'] = [{
+    'count': args.executor_count,
+    'request-delay': 2
+  }]
 
 if args.invalidate:
   cache = _base._get_cache_fs()
@@ -134,17 +102,77 @@ while True:
   break
 
 
+def _get_searchers(queue, config):
+  count = config.get('count', 1)
+  result = {'query': config['search-queries']}
+  while count > 0:
+    searcher = _base.TweetSearcher(queue, **config)
+    result.setdefault('searchers', []).append(searcher)
+    count -= 1
+  return result
+
+
+def _get_handlers(tweet_queue, action_queue, config):
+  count = config.get('count', 1)
+  handlers = []
+  while count > 0:
+    handlers.append(_base.ContestTweetHandler(
+      tweet_queue, action_queue, **config
+    ))
+    count -= 1
+  return handlers
+
+
+def _get_executors(action_queue, **config):
+  count = config.get('count', 1)
+  executors = []
+  while count > 0:
+    executors.append(_base.ActionExecutor(
+      action_queue, config['request-delay']
+    ))
+    count -= 1
+  return executors
+
+
+def _spin_handlers(handlers):
+  for handler in handlers:
+    threading.Thread(
+      target=handler.handle
+    ).start()
+
+
+def _spin_searchers(queries, searchers):
+  if not isinstance(queries, collections.Iterable):
+    queries = (queries, )
+  for query in queries:
+    for searcher in searchers:
+      threading.Thread(
+        target=searcher.search, args=(query,)
+      ).start()
+
+
+def _spin_executors(executors):
+  if not isinstance(executors, collections.Iterable):
+    executors = (executors, )
+  for executor in executors:
+    threading.Thread(
+      target=executor.execute
+    ).start()
+
+
 tweet_queue = queue.Queue()
 action_queue = queue.Queue()
 
-for searcher in config['searchers']:
-  searcher = _get_searchers(tweet_queue, searcher)
+for params in config['searchers']:
+  searcher = _get_searchers(tweet_queue, params)
   _spin_searchers(searcher['query'], searcher['searchers'])
 
-for handler in config['handlers']:
-  handler = _get_handlers(tweet_queue, action_queue, handler)
+for params in config['handlers']:
+  handler = _get_handlers(tweet_queue, action_queue, params)
   _spin_handlers(handler)
 
-_spin_executors(_base.ActionExecutor(action_queue, delay=2))
+for params in config['executors']:
+  executors = _get_executors(action_queue, **params)
+  _spin_executors(executors)
 
 tweet_queue.join(); action_queue.join()

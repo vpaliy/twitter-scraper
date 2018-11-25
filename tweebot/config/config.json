@@ -1,7 +1,7 @@
 {
     "searchers": [{
         "count": 1,
-        "search-queries": ["rt to win", "#giveaway"],
+        "search-queries": ["rt to win", "#giveaway", "RT", "contest"],
         "scan-time": 560,
         "month-diff": 1,
         "tweet-limit": null,
@@ -16,5 +16,10 @@
         "count": 5,
         "keywords": ["win", "winner", "lucky"],
         "avoid-usernames": ["bot", "bot spotter", "bot spotting"]
+    }],
+
+    "executors": [{
+      "count": 2,
+      "request-delay": 5
     }]
 }
