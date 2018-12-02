@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 import os
+import sys
 import json
 import shutil
 import argparse
@@ -11,6 +12,9 @@ import threading
 import collections
 from tweebot import logger
 
+if sys.version_info[0] < 3:
+    raise Exception("Python 3 or a more recent version is required.")
+  
 parser = argparse.ArgumentParser()
 default_config_path = os.path.join(
   os.path.dirname(__file__), 'config/'
