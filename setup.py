@@ -36,7 +36,6 @@ setup(
     include_package_data=True,
     classifiers=[
         'Intended Audience :: Developers',
-        'License :: MIT License',
         'Operating System :: OS Independent',
         'Programming Language :: Python',
         'Programming Language :: Python :: 3',

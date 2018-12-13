@@ -4,7 +4,7 @@
 This [Def Con talk](https://www.youtube.com/watch?v=iAOOdYsK7MM) was the motivation behind creating this project. In short, a guy built a bot to retweet twitter contests and won a lot of random stuff. He's never released the source code, so I decided that implementing a bot like this would be a great way to spend weekends. Consequently, I built a more general version of the bot discussed in the talk; you can configure the bot and use it for different purposes than retweeting contests (RT to make donations, for instance).
 
 Why **twitter-santa**? Well, it's Christmas soon, you can get yourself a present:)
-But to be serious, I encourage you to use this bot for educational purposes only. I'm more interested in the interface design of this bot, so if you have any ideas how we can improve it, let me know.
+However, to be serious, I encourage you to use this bot for educational purposes only. I'm more interested in the interface design of this bot, so if you have any ideas on how we can improve it, let me know.
 
 ## Basics
 Before we get started, you need to know that this bot uses Python 3 only (I just couldn't restrain myself from using f-Strings).
@@ -17,7 +17,7 @@ Here is the complete list of them:
 - `-e` or `--executor-count` (specifies how many executors - explained below - we need to launch)
 
 Speaking of interface design, I would define three important abstractions here:
-- Searchers (main responsibility is to search for the desired tweets and pass them along to handlers)
+- Searchers (primary responsibility is to search for the desired tweets and pass them along to handlers)
 
 - Handlers (responsible for filtering out and parsing tweets to determine appropriate actions that should be applied to those tweets. When finished, pass the actions to executors)
 
@@ -25,7 +25,7 @@ Speaking of interface design, I would define three important abstractions here:
 
 - Executors (receive a list of actions from handlers and execute them. Plain and simple)
 
-Let's dive into configuration of those objects. Here's a sample JSON file:
+Let's dive into the configuration of those objects. Here's a sample JSON file:
 
 ```json
 {
@@ -65,7 +65,7 @@ Let's dive into configuration of those objects. Here's a sample JSON file:
 ```
 
 **Searchers**:
- - `count` (defines how many searchers with the exact same configuration we need to create. **Optional**)
+ - `count` (defines how many searchers with the same configuration we need to create. **Optional**)
 
  - `search-queries` (an array of strings that should be used for searching tweets. **Required**)
 
@@ -89,7 +89,7 @@ Let's dive into configuration of those objects. Here's a sample JSON file:
 
 
 **Handlers**:
-  - `count` (defines how many handlers with the exact same configuration we need to create. **Optional**)
+  - `count` (defines how many handlers with the same configuration we need to create. **Optional**)
 
   - `keywords` (an array of strings that every tweet should contain in order to be processed. **Required**)
 
@@ -100,6 +100,8 @@ Let's dive into configuration of those objects. Here's a sample JSON file:
 
 Mostly all of the optional configuration fields have a default value. You can look at the source code for more information.
 
+## Pic
+<img src="https://github.com/vpaliy/twitter-santa/blob/master/art/final.jpg" />
 
 # Disclaimer
 This bot has been written only for educational purposes.
