@@ -14,11 +14,11 @@ import coloredlogs
 import abc
 import dateutil.relativedelta
 import constants
-
-from tweebot import __version__, logger
-from actions import FollowAction, RetweetAction, LikeAction, Action
-from six.moves.http_cookiejar import FileCookieJar, LWPCookieJar
+import _thread
 from abc import abstractmethod, ABC
+
+from tweebot import __version__, logger, ua_provider
+from six.moves.http_cookiejar import FileCookieJar, LWPCookieJar
 from bs4 import BeautifulSoup
 from bs4.element import NavigableString, Tag
 
@@ -59,23 +59,84 @@ class Tweet(object):
     self.links = links
     self.retweet_count = retweet_count
 
+  def __repr__(self):
+    if self.text:
+      return f'{" ".join(self.text.split()[:7])}...'
+    return self.id
 
-class TweetHandler(abc.ABC):
-  _AVOID_KEYWORDS = {'bot', 'fake'}
-  _AVOID_USERNAMES = {'bot', 'bot spotter', 'bot spotting'}
 
-  def __init__(self, queue, action_queue, **kwargs):
-    if not queue or not action_queue:
+class Action(ABC):
+  __slots__ = ('tweet', )
+
+  def __init__(self, tweet):
+    self.tweet = tweet
+
+  def get_session(self):
+    username = os.environ['username']
+    session = create_session(username)
+    cookies = requests.utils.dict_from_cookiejar(session.cookies)
+
+    if 'ct0' not in cookies:
+      logger.error(f'{username}\'s session has expired. Log in again')
+      clear(silent=True)
+      os._exit(1) # TODO: a better way to do this?
+
+    session.headers['User-Agent'] = ua_provider.fetch()
+    session.headers['Authorization'] = constants.BEARER
+    session.headers['X-Twitter-Auth-Type'] = 'OAuth2Session'
+    session.headers['X-Twitter-Active-User'] = 'yes'
+    session.headers['Origin'] = constants.BASE_URL
+    session.headers['x-csrf-token'] = cookies['ct0']
+
+    return session
+
+  def make_request(self, url, method='post',
+                  error_delay=5, tries=10, allow_redirects=False):
+    with self.get_session() as session:
+      while tries > 0:
+        try:
+          request = getattr(session, method.lower())
+          res = request(
+            url = url,
+            data = self.payload,
+            allow_redirects = allow_redirects
+          )
+          return res
+        except Exception as ex:
+          logger.error(ex) # TODO: remove this
+          time.sleep(error_delay)
+          tries -= 1
+
+  @abstractmethod
+  def execute(self, delay):
+    """Execute action."""
+
+  @property
+  @abstractmethod
+  def payload(self):
+    pass
+
+
+class BaseTweetHandler(abc.ABC):
+  _AVOID_KEYWORDS_DEFAULT = {'bot', 'fake'}
+  _AVOID_USERNAMES_DEFAULT = {'bot', 'bot spotter', 'bot spotting'}
+
+  def __init__(self, tweet_queue, action_queue, **kwargs):
+    if not tweet_queue or not action_queue:
       raise RuntimeError('Queues should be provided')
-    self._queue = queue
+    self._tweet_queue = tweet_queue
     self._action_queue = action_queue
     self._keywords = kwargs['keywords']
-    self._avoid_keywords = kwargs.get('avoid-keywords', self._AVOID_KEYWORDS)
-    self._avoid_usernames = kwargs.get('avoid-usernames', self._AVOID_USERNAMES)
+    self._avoid_keywords = kwargs.get(
+      'avoid-keywords', self._AVOID_KEYWORDS_DEFAULT
+    )
+    self._avoid_usernames = kwargs.get(
+      'avoid-usernames', self._AVOID_USERNAMES_DEFAULT
+    )
 
   def handle(self):
     pattern = re.compile(
-      r'^((.*? )?({find})([ ,.!?]|$)){{1}}.*$'.format(
+      r'^((.*? )?({find})([ ,.!?]|$)).*$'.format(
       find='|'.join(self._keywords),
     ), re.IGNORECASE)
 
@@ -90,9 +151,10 @@ class TweetHandler(abc.ABC):
     ))
 
     while True:
-      tweet = self._queue.get()
+      tweet = self._tweet_queue.get()
       if tweet is _sentinel:
-        self._queue.put(_sentinel)
+        self._tweet_queue.put(_sentinel)
+        self._tweet_queue.task_done()
         break
       user = tweet.user
       if avoid_usernames.search(user.username):
@@ -102,40 +164,12 @@ class TweetHandler(abc.ABC):
         continue
       if pattern.search(tweet.text):
         self.process_tweet(tweet)
+      self._tweet_queue.task_done()
+    self._action_queue.put(_sentinel)
 
   @abstractmethod
   def process_tweet(self, tweet):
     raise NotImplemented
-
-
-class ContestTweetHandler(TweetHandler):
-  def __init__(self, *args, **kwargs):
-    super().__init__(*args, **kwargs)
-    self._follow = re.compile('follow', re.IGNORECASE)
-    self._like = re.compile('|'.join(['like', 'fav']), re.IGNORECASE)
-    self._retweet = re.compile('|'.join(['rt', 'retweet']), re.IGNORECASE)
-
-  def process_tweet(self, tweet):
-    text, user = tweet.text, tweet.user
-    actions = []
-    if self._retweet.search(text):
-      actions.append(LikeAction(tweet))
-      actions.append(RetweetAction(tweet))
-      if not user.is_followed:
-        actions.append(FollowAction(tweet))
-      else:
-        logger.warning(f'already following {user.username}')
-    else:
-      if self._follow.search(text):
-        if not user.is_followed:
-          actions.append(FollowAction(tweet))
-          actions.append(LikeAction(tweet))
-        else:
-          logger.warning(f'already following {user.username}')
-          if self._like.search(text):
-            actions.append(LikeAction(tweet))
-    if len(actions) > 0:
-      self._action_queue.put(actions)
 
 
 class ActionExecutor(object):
@@ -148,6 +182,7 @@ class ActionExecutor(object):
       actions = self._queue.get()
       if actions is _sentinel:
         self._queue.put(_sentinel)
+        self._queue.task_done()
         break
       if not isinstance(actions, collections.Iterable):
         actions = (actions, )
@@ -156,7 +191,7 @@ class ActionExecutor(object):
           logger.error(f'expected object of Action type, got {type(action)}')
           continue
         action.execute(self._delay)
-
+      self._queue.task_done()
 
 class InvalidCredentials(Exception):
   """Gets raised when the user enters invalid credentials."""
@@ -196,7 +231,7 @@ def _is_logged(username):
       f'{username}-{constants.COOKIES_FILE}'
     )
     os.remove(file)
-    logger.warning(f'{username} session has expired. Please sign in.')
+    logger.warning(f'{username}\'s session has expired. Please sign in.')
   else:
     logger.warning(f'No sessions found for {username}.')
   return False
@@ -225,8 +260,7 @@ def login(username, password, tries=10, delay=2):
 
     while tries > 0:
       try:
-        # random user-agent
-        session.headers['User-Agent'] = fake_useragent.UserAgent().firefox
+        session.headers['User-Agent'] = ua_provider.fetch()
         res = session.post(constants.SESSIONS_URL, data=payload, allow_redirects=False)
         res.raise_for_status()
         if 'location' in res.headers:
@@ -253,6 +287,21 @@ def login(username, password, tries=10, delay=2):
        Try logging in through your browser. If you can't log in, then you've been banned.'''
      )
     exit()
+
+
+def clear(silent=False):
+  cache = _get_cache_fs()
+  dir = cache.getsyspath('/')
+  for the_file in os.listdir(dir):
+    file_path = os.path.join(dir, the_file)
+    try:
+      if os.path.isfile(file_path):
+        os.unlink(file_path)
+    except Exception as e:
+      pass
+    else:
+      if not silent:
+        logger.info('All stored data has been erased')
 
 
 def _convert_to_bool(condition):
@@ -330,8 +379,8 @@ class TweetSearcher(object):
     self._error_tries = kwargs.get('error-tries', 5)
     self._empty_tries = kwargs.get('empty-tries', 5)
     self._tweets_limit = kwargs.get('tweets-limit')
-    self._with_pics_only = kwargs.get('pictures-only', True)
-    self._verified_only = kwargs.get('verified-accounts-only')
+    self._with_pics_only = kwargs.get('pictures-only', False)
+    self._verified_only = kwargs.get('verified-accounts-only', False)
     self._month_diff = kwargs.get('month-diff')
     self._queue = queue
     self._cache = set()
@@ -361,7 +410,7 @@ class TweetSearcher(object):
       session.headers['X-Twitter-Active-User'] = 'yes'
       while tries > 0:
         try:
-          session.headers['User-Agent'] = 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) snap Chromium/70.0.3538.77 Chrome/70.0.3538.77 Safari/537.36'
+          session.headers['User-Agent'] = ua_provider.fetch()
           res = session.get(constants.TIMELINE_SEARCH_URL, params=params)
           data = res.json()
           # check if we have what we need
@@ -442,5 +491,6 @@ class TweetSearcher(object):
     self._finish(query, tweet_count)
 
   def _finish(self, query, tweet_count):
-    logger.info(f'{query} | Total tweets found:{tweet_count}')
     self._queue.put(_sentinel)
+    time.sleep(3) # some executor may be still working
+    logger.info(f'{query} --- Total tweets found:{tweet_count}')
