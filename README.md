@@ -1,7 +1,10 @@
 # twitter-santa
 
 ## Why?
-This [Def Con talk](https://www.youtube.com/watch?v=iAOOdYsK7MM) was the motivation behind creating this project. In short, a guy built a bot to retweet twitter contests and won a lot of random stuff. He's never released the source code, so I decided that implementing a bot like this would be a great way to spend weekends. Consequently, I built a more general version of the bot discussed in the talk; you can configure the bot and use it for different purposes than retweeting contests (RT to make donations, for instance). However, I encourage you to use this bot for educational purposes only.
+This [Def Con talk](https://www.youtube.com/watch?v=iAOOdYsK7MM) was the motivation behind creating this project. In short, a guy built a bot to retweet twitter contests and won a lot of random stuff. He's never released the source code, so I decided that implementing a bot like this would be a great way to spend weekends. Consequently, I built a more general version of the bot discussed in the talk; you can configure the bot and use it for different purposes than retweeting contests (RT to make donations, for instance).
+
+Why **twitter-santa**? Well, it's Christmas soon, you can get yourself a present:)
+But to be serious, I encourage you to use this bot for educational purposes only. I'm more interested in the interface design of this bot, so if you have any ideas how we can improve it, let me know.
 
 ## Basics
 Before we get started, you need to know that this bot uses Python 3 only (I just couldn't restrain myself from using f-Strings).
@@ -61,16 +64,41 @@ Let's dive into configuration of those objects. Here's a sample JSON file:
 }
 ```
 
-`Searchers`:
- - count (defines how many searchers with the exact same configuration we need to create. Optional)
+**Searchers**:
+ - `count` (defines how many searchers with the exact same configuration we need to create. **Optional**)
 
- - search-queries (an array of strings that should be used for searching tweets. Required)
+ - `search-queries` (an array of strings that should be used for searching tweets. **Required**)
 
- - scan-time (specifies for how long this searcher should be scrapping Twitter. Optional)
+ - `scan-time` (specifies for how long this searcher should be scrapping Twitter. **Optional**)
 
- - month-diff (defines the "expiration date" for tweets in terms of months. For instance, if 1 is specified, then we would only accept tweets that have been tweeted within last month. Optional)
+ - `month-diff` (defines the "expiration date" for tweets in terms of months. For instance, if 1 is specified, then we would only accept tweets that have been tweeted within last month. **Optional**)
 
- - request-delay (
+ - `request-delay` (specifies for how long this searcher should wait before making an HTTP request. **Optional**)
+
+ - `error-delay` (specifies for how long this searcher should wait before retrying an HTTP request after an error has occurred. **Optional**)
+
+ - `empty-request-delay` (specifies for how long this searcher should wait before making another HTTP request after getting an empty list of tweets. **Optional**)
+
+ - `error-tries` (specifies how many error tries are allowed before terminating the bot. **Optional**)
+
+ - `empty-tries` (specifies how many "empty" tries are allowed before terminating the current searcher. **Optional**)
+
+ - `pictures-only` (true/false values. Should every tweet contain an image? **Optional**)
+
+ - `verified-accounts-only` (true/false values. Should we search for tweets from verified accounts only? **Optional**)
+
+
+**Handlers**:
+  - `count` (defines how many handlers with the exact same configuration we need to create. **Optional**)
+
+  - `keywords` (an array of strings that every tweet should contain in order to be processed. **Required**)
+
+  - `avoid-usernames` (an array of usernames that we should avoid - bot spotters as an example. **Optional**)
+
+  - `avoid-keywords` (an array of usernames that we should avoid - bot spotters as an example. **Optional**)
+
+
+Mostly all of the optional configuration fields have a default value. You can look at the source code for more information.
 
 
 # Disclaimer
