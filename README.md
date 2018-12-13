@@ -7,7 +7,7 @@ Why **twitter-santa**? Well, it's Christmas soon, you can get yourself a present
 However, to be serious, I encourage you to use this bot for educational purposes only. I'm more interested in the interface design of this bot, so if you have any ideas on how we can improve it, let me know.
 
 ## Basics
-Before we get started, you need to know that this bot uses Python 3 only (I just couldn't restrain myself from using f-Strings).
+Before we get started, you need to know that this bot uses Python >= 3 only.
 
 This bot contains a small number of command line arguments that you can pass in.
 Here is the complete list of them:

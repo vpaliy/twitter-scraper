@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# -*- coding: utf-8 -*-
+# -*- coding: future_fstrings -*-
 import os
 import sys
 import json
@@ -14,7 +14,8 @@ from handlers import ContestTweetHandler
 from tweebot import logger, ua_provider
 
 if sys.version_info[0] < 3:
-    raise Exception("Python 3 or a more recent version is required.")
+  logger.error('Python 3 or a more recent version is required.')
+  exit()
 
 parser = argparse.ArgumentParser()
 default_config_path = os.path.join(

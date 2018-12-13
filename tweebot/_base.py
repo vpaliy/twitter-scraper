@@ -1,3 +1,4 @@
+# -*- coding: future_fstrings -*-
 import os
 import time
 import datetime
@@ -10,12 +11,12 @@ import fake_useragent
 import typing
 import fs
 import re
-import coloredlogs
 import abc
 import dateutil.relativedelta
 import constants
 import _thread
-from abc import abstractmethod, ABC
+import abc
+import six
 
 from tweebot import __version__, logger, ua_provider
 from six.moves.http_cookiejar import FileCookieJar, LWPCookieJar
@@ -65,7 +66,8 @@ class Tweet(object):
     return self.id
 
 
-class Action(ABC):
+@six.add_metaclass(abc.ABCMeta)
+class Action(object):
   __slots__ = ('tweet', )
 
   def __init__(self, tweet):
@@ -107,17 +109,17 @@ class Action(ABC):
           time.sleep(error_delay)
           tries -= 1
 
-  @abstractmethod
+  @abc.abstractmethod
   def execute(self, delay):
     """Execute action."""
 
   @property
-  @abstractmethod
+  @abc.abstractmethod
   def payload(self):
     pass
 
-
-class BaseTweetHandler(abc.ABC):
+@six.add_metaclass(abc.ABCMeta)
+class BaseTweetHandler(object):
   _AVOID_KEYWORDS_DEFAULT = {'bot', 'fake'}
   _AVOID_USERNAMES_DEFAULT = {'bot', 'bot spotter', 'bot spotting'}
 
@@ -167,7 +169,7 @@ class BaseTweetHandler(abc.ABC):
       self._tweet_queue.task_done()
     self._action_queue.put(_sentinel)
 
-  @abstractmethod
+  @abc.abstractmethod
   def process_tweet(self, tweet):
     raise NotImplemented
 

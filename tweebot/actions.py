@@ -1,9 +1,10 @@
-# -*- coding: utf-8 -*-
+# -*- coding: future_fstrings -*-
 import requests
 import time
 import constants
 from tweebot import logger
 from _base import Action
+
 
 class FollowAction(Action):
   def execute(self, delay):

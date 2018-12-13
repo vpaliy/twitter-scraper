@@ -1,7 +1,9 @@
+# -*- coding: future_fstrings -*-
 import re
 from tweebot import logger
 from _base import BaseTweetHandler
 from actions import *
+
 
 class ContestTweetHandler(BaseTweetHandler):
   def __init__(self, *args, **kwargs):
