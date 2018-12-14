@@ -7,7 +7,7 @@ from shutil import rmtree
 
 from setuptools import setup, find_packages, Command
 
-base_path = os.path.abspath(os.path.dirname(__file__))
+here = os.path.abspath(os.path.dirname(__file__))
 
 
 NAME = 'twitter-santa'
@@ -18,17 +18,17 @@ AUTHOR = 'Vasyl Paliy'
 REQUIRES_PYTHON = '>=3.0'
 VERSION = None
 
-with io.open(os.path.join(base_path, 'tweebot', '__init__.py'), encoding='utf-8') as fp:
+with io.open(os.path.join(here, 'tweebot', '__init__.py'), encoding='utf-8') as fp:
   VERSION = re.compile(r".*__version__ = '(.*?)'", re.S).match(fp.read()).group(1)
 
 try:
-  with io.open(os.path.join(base_path, 'README.md'), encoding='utf-8') as f:
+  with io.open(os.path.join(here, 'README.md'), encoding='utf-8') as f:
     long_description = '\n' + f.read()
 except FileNotFoundError:
     long_description = str()
 
 try:
-  with io.open(os.path.join(base_path, 'requirements.txt'), encoding='utf-8') as fp:
+  with io.open(os.path.join(here, 'requirements.txt'), encoding='utf-8') as fp:
     requires = [r.strip() for r in fp.readlines()]
 except FileNotFoundError:
     requires = [
@@ -61,7 +61,7 @@ class UploadCommand(Command):
   def run(self):
     try:
       self.status('Removing previous builds…')
-      rmtree(os.path.join(base_path, 'dist'))
+      rmtree(os.path.join(here, 'dist'))
     except OSError:
       pass
 

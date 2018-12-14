@@ -103,6 +103,20 @@ Mostly all of the optional configuration fields have a default value. You can lo
 ## Pic
 <img src="https://github.com/vpaliy/twitter-santa/blob/master/art/final.jpg" />
 
+# Installation
+
+## Option 1: Install via git clone
+
+This would be the easiest way to play around with this bot:
+```
+$ git clone https://github.com/vpaliy/twitter-santa.git
+$ cd twitter-santa/
+$ python3 tweetbot/
+```
+
+## Option 2: Download with pip3
+ Coming soon...
+
 # Disclaimer
 This bot has been written only for educational purposes.
 I hold no liability for what you do with this bot or what happens to you by using this bot.
