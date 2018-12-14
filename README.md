@@ -111,7 +111,7 @@ This would be the easiest way to play around with this bot:
 ```
 $ git clone https://github.com/vpaliy/twitter-santa.git
 $ cd twitter-santa/
-$ python3 tweetbot/
+$ python3 tweebot/
 ```
 
 ## Option 2: Download with pip3
