@@ -1,36 +1,94 @@
-from setuptools import setup, find_packages
 import os
+import sys
 import re
+import io
+from shutil import rmtree
 
-base_path = os.path.dirname(__file__)
+from setuptools import setup, find_packages, Command
 
-with open(os.path.join(base_path, 'tweebot', '__init__.py')) as fp:
+base_path = os.path.abspath(os.path.dirname(__file__))
+
+
+NAME = 'twitter-santa'
+DESCRIPTION = 'A bot that scrapes Twitter, retweets, and follow other users.'
+URL = 'https://github.com/vpaliy/twitter-santa'
+EMAIL = 'vpaliy97@gmail.com'
+AUTHOR = 'Vasyl Paliy'
+REQUIRES_PYTHON = '>=3.0'
+VERSION = None
+
+with io.open(os.path.join(base_path, 'tweebot', '__init__.py'), encoding='utf-8') as fp:
   VERSION = re.compile(r".*__version__ = '(.*?)'", re.S).match(fp.read()).group(1)
 
-version = VERSION
+try:
+  with io.open(os.path.join(base_path, 'README.md'), encoding='utf-8') as f:
+    long_description = '\n' + f.read()
+except FileNotFoundError:
+    long_description = str()
 
-requires = [
-  'requests>=2.18.4',
-  'six>=1.11.0',
-  'SQLAlchemy>=1.1.14',
-  'urllib3>=1.22',
-  'beautifulsoup4>=4.4.0'
-]
+try:
+  with io.open(os.path.join(base_path, 'requirements.txt'), encoding='utf-8') as fp:
+    requires = [r.strip() for r in fp.readlines()]
+except FileNotFoundError:
+    requires = [
+      'requests',
+      'six',
+      'SQLAlchemy',
+      'urllib3',
+      'beautifulsoup4',
+      'coloredlogs',
+      'fake-useragent'
+    ]
 
-packages = [
-  'tweebot'
-]
+class UploadCommand(Command):
+  """Support setup.py upload."""
+
+  description = 'Build and publish the package.'
+  user_options = []
+
+  @staticmethod
+  def status(s):
+    """Prints things in bold."""
+    print('\033[1m{0}\033[0m'.format(s))
+
+  def initialize_options(self):
+    pass
+
+  def finalize_options(self):
+    pass
+
+  def run(self):
+    try:
+      self.status('Removing previous builds…')
+      rmtree(os.path.join(base_path, 'dist'))
+    except OSError:
+      pass
+
+    self.status('Building Source and Wheel (universal) distribution…')
+    os.system('{0} setup.py sdist bdist_wheel --universal'.format(sys.executable))
+
+    self.status('Uploading the package to PyPI via Twine…')
+    os.system('twine upload dist/*')
+
+    sys.exit()
+
 
 setup(
-    name='tweebot',
-    version=version,
-    description='Twitter bot',
-    author='Vasyl Paliy',
-    author_email='vpaliy97@gmail.com',
-    url='https://github.com/thevpaliy/twitter-santa',
+    name=NAME,
+    version=VERSION,
+    description=DESCRIPTION,
+    long_description=long_description,
+    long_description_content_type='text/markdown',
+    author=AUTHOR,
+    author_email=EMAIL,
+    url=URL,
     license='MIT',
-    python_requires=">=3.0",
-    packages=packages,
+    package_data={
+      '': ['*.txt', '*.rst'],
+    },
+    python_requires=REQUIRES_PYTHON,
+    packages=find_packages(exclude=('tests',)),
+    scripts=['tweebot/twsanta'],
     install_requires=requires,
     use_2to3=True,
     include_package_data=True,
@@ -45,4 +103,7 @@ setup(
         'Programming Language :: Python :: Implementation :: CPython',
         'Programming Language :: Python :: Implementation :: PyPy',
     ],
+    cmdclass={
+      'upload': UploadCommand,
+    },
 )

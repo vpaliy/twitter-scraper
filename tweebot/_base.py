@@ -7,7 +7,6 @@ import json
 import random
 import collections
 import requests
-import fake_useragent
 import typing
 import fs
 import re

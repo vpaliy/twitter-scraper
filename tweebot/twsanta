@@ -9,7 +9,7 @@ import getpass
 import queue
 import threading
 import collections
-import _base
+import tweebot._base as _base
 from handlers import ContestTweetHandler
 from tweebot import logger, ua_provider
 

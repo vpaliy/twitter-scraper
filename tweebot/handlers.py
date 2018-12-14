@@ -1,8 +1,8 @@
 # -*- coding: future_fstrings -*-
 import re
 from tweebot import logger
-from _base import BaseTweetHandler
-from actions import *
+from tweebot._base import BaseTweetHandler
+from tweebot.actions import *
 
 
 class ContestTweetHandler(BaseTweetHandler):

@@ -3,7 +3,7 @@ import requests
 import time
 import constants
 from tweebot import logger
-from _base import Action
+from tweebot._base import Action
 
 
 class FollowAction(Action):
