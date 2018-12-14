@@ -1,5 +1,7 @@
 # twitter-santa
 
+<img src="https://github.com/vpaliy/twitter-santa/blob/master/art/final.jpg" />
+
 ## Why?
 This [Def Con talk](https://www.youtube.com/watch?v=iAOOdYsK7MM) was the motivation behind creating this project. In short, a guy built a bot to retweet twitter contests and won a lot of random stuff. He's never released the source code, so I decided that implementing a bot like this would be a great way to spend weekends. Consequently, I built a more general version of the bot discussed in the talk; you can configure the bot and use it for different purposes than retweeting contests (RT to make donations, for instance).
 
@@ -100,12 +102,9 @@ Let's dive into the configuration of those objects. Here's a sample JSON file:
 
 Mostly all of the optional configuration fields have a default value. You can look at the source code for more information.
 
-## Pic
-<img src="https://github.com/vpaliy/twitter-santa/blob/master/art/final.jpg" />
-
 # Installation
 
-## Option 1: Install via git clone
+### Option 1: Install via git clone
 
 This would be the easiest way to play around with this bot:
 ```
@@ -114,7 +113,7 @@ $ cd twitter-santa/
 $ python3 tweebot/
 ```
 
-## Option 2: Download with pip3
+### Option 2: Download with pip3
  Coming soon...
 
 # Disclaimer
