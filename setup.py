@@ -1,3 +1,4 @@
+#!/usr/bin/env python
 import os
 import sys
 import re
@@ -84,11 +85,19 @@ setup(
     url=URL,
     license='MIT',
     package_data={
-      '': ['*.txt', '*.rst'],
+      '': ['*.txt', '*.rst']
     },
     python_requires=REQUIRES_PYTHON,
     packages=find_packages(exclude=('tests',)),
-    scripts=['tweebot/twsanta'],
+    entry_points={
+      'console_scripts': [
+          'tweebot = tweebot.__main__:main'
+          ]
+    },
+    data_files=[
+      'tweebot/config/config.json',
+      'tweebot/config/user-agents.txt'
+    ],
     install_requires=requires,
     use_2to3=True,
     include_package_data=True,

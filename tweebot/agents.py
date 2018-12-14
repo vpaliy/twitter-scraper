@@ -2,6 +2,7 @@
 import random
 import fake_useragent
 
+
 class UserAgentProvider(object):
   def __init__(self, agents=None):
     self._agents = agents or []
