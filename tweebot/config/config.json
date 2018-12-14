@@ -1,10 +1,10 @@
 {
     "searchers": [{
         "count": 1,
-        "search-queries": ["ML", "SpaceX", "Artificial Intelligence", "AI"],
+        "search-queries": ["#giveaway", "Retweet and win", "retweet and you could win", "rt for your chance to win", "#giveawayalert", "win rt", "#rttowin", "#sweepstakes"],
         "scan-time": 50,
         "month-diff": 1,
-        "request-delay": 2,
+        "request-delay": 5,
         "error-delay": 5,
         "empty-request-delay": 20,
         "error-tries": 5,
@@ -13,7 +13,7 @@
 
     "handlers": [{
         "count": 5,
-        "keywords": [" ", ""],
+        "keywords": ["winner", "win", "lucky"],
         "avoid-usernames": ["bot", "bot spotter", "bot spotting"]
     }],
 
