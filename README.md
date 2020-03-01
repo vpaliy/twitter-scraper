@@ -3,10 +3,9 @@
 <img src="https://github.com/vpaliy/twitter-santa/blob/master/art/final.jpg" />
 
 ## Why?
-This [Def Con talk](https://www.youtube.com/watch?v=iAOOdYsK7MM) was the motivation behind creating this project. In short, a guy built a bot to retweet twitter contests and won a lot of random stuff. He's never released the source code, so I decided that implementing a bot like this would be a great way to spend weekends. Consequently, I built a more general version of the bot discussed in the talk; you can configure the bot and use it for different purposes than retweeting contests (RT to make donations, for instance).
+This [Def Con talk](https://www.youtube.com/watch?v=iAOOdYsK7MM) was my motivation behind creating this project. I built a more general version of the bot discussed in the talk;
 
-Why **twitter-santa**? Well, it's Christmas soon, you can get yourself a present:)
-However, to be serious, I encourage you to use this bot for educational purposes only. I'm more interested in the interface design of this bot, so if you have any ideas on how we can improve it, let me know.
+Use this bot for educational purposes only.
 
 ## Basics
 Before we get started, you need to know that this bot uses Python >= 3 only.
