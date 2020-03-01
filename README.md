@@ -1,4 +1,4 @@
-# twitter-santa
+# twitter-scraper
 
 <img src="https://github.com/vpaliy/twitter-santa/blob/master/art/final.jpg" />
 
